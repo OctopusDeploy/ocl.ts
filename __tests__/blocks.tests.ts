@@ -1,3 +1,4 @@
+import { NodeType } from "../src/ast";
 import { Lexer } from "../src/lexer";
 import { Parser } from "../src/parser";
 import { TokenType } from "../src/token";
@@ -233,46 +234,27 @@ test("invalid empty block with unquoted label", () => {
 }`);
     expect(lexer).toBeDefined();
 
-    let token = lexer.nextToken();
-    expect(token.col).toEqual(1);
-    expect(token.ln).toEqual(1);
-    expect(token.tokenError).toBeUndefined();
-    expect(token.tokenType).toEqual(TokenType.SYMBOL);
-    expect(token.value).toEqual(`my`);
+    const parser = new Parser(lexer);
+    expect(parser).toBeDefined();
 
-    token = lexer.nextToken();
-    expect(token.col).toEqual(4);
-    expect(token.ln).toEqual(1);
-    expect(token.tokenError).toBeDefined();
-    expect(token.tokenType).toEqual(TokenType.SYMBOL);
-    expect(token.value).toEqual(`block`);
+    const AST = parser.getAST();
+    expect(AST).toBeDefined();
+    expect(AST.length).toBe(2);
 
-    token = lexer.nextToken();
-    expect(token.col).toEqual(10);
-    expect(token.ln).toEqual(1);
-    expect(token.tokenError).toBeUndefined();
-    expect(token.tokenType).toEqual(TokenType.OPEN_BRACKET);
-    expect(token.value).toEqual(`{`);
+    let node = AST[0];
+    expect(node.problems).toBeDefined();
+    if (node.problems) {
+        expect(node.problems.length).toBeGreaterThan(0);
+        expect(node.problems[0]).toBe("Unexpected token. Expected Arrtibute or Block definition.")
+    }
 
-    token = lexer.nextToken();
-    expect(token.col).toEqual(11);
-    expect(token.ln).toEqual(1);
-    expect(token.tokenError).toBeUndefined();
-    expect(token.tokenType).toEqual(TokenType.NEW_LINE);
-    expect(token.value).toEqual(`\n`);
-
-    token = lexer.nextToken();
-    expect(token.col).toEqual(1);
-    expect(token.ln).toEqual(2);
-    expect(token.tokenError).toBeUndefined();
-    expect(token.tokenType).toEqual(TokenType.CLOSE_BRACKET);
-    expect(token.value).toEqual(`}`);
-
-    token = lexer.nextToken();
-    expect(token.col).toEqual(2);
-    expect(token.ln).toEqual(2);
-    expect(token.tokenError).toBeUndefined();
-    expect(token.tokenType).toEqual(TokenType.EOF);
-    expect(token.value).toEqual(`EOF`);
+    expect(node.type).toBe(NodeType.RECOVERY_NODE)
+    if (node.type === NodeType.RECOVERY_NODE) {
+        expect(node.unexpectedToken).toBeDefined();
+        expect(node.unexpectedToken.value).toBe("block")
+    }
+    
+    node = AST[1];
+    expect(node.type).toBe(NodeType.BLOCK_NODE);
 });
 
