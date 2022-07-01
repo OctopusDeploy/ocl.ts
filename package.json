@@ -35,7 +35,7 @@
     "url": "git+https://github.com/OctopusDeploy/ocl.ts.git"
   },
   "scripts": {
-    "build": "tsc --p tsconfig.json",
+    "build": "tsc",
     "prepare": "npm run build",
     "test": "jest"
   },
