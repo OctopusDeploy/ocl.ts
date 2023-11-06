@@ -53,18 +53,31 @@ function getProperty(node: ASTNode | undefined, name: string): string | number |
             // selected as if it were a property.
             return new Proxy(blockChildren, {
                 get: function (target, name) {
-                    const child = target.filter(b => b.labels
+                    const children = target.filter(b => b.labels
                         ?.map(l => JSON.parse(l.value.value))
                         .pop() === name)
-                        .pop()
 
-                    if (child) {
-                        return new Proxy(child, {
-                                get: function (target, name) {
-                                    return getProperty(target, name.toString())
-                                }
+                    if (children) {
+                        if (children.length === 1) {
+                            // If there is one child, return it directly
+                            const firstChild = children.pop()
+                            if (firstChild) {
+                                return new Proxy(firstChild, {
+                                        get: function (target, name) {
+                                            return getProperty(target, name.toString())
+                                        }
+                                    }
+                                )
                             }
-                        )
+                        } else if (children.length > 1) {
+                            // If there are multiple children, return then all as an array
+                            return children.map(c => new Proxy(c, {
+                                    get: function (target, name) {
+                                        return getProperty(target, name.toString())
+                                    }
+                                }
+                            ))
+                        }
                     }
 
                     return undefined
