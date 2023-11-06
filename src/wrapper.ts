@@ -21,7 +21,7 @@ export function parseSteps(input: string) {
     })) as any
 }
 
-function getProperty(node: ASTNode | undefined, name: string): string|number|boolean|BlockNode|DictionaryNode|undefined {
+function getProperty(node: ASTNode | undefined, name: string): string | number | boolean | BlockNode[] | DictionaryNode | undefined {
     if (!node || !name) {
         return undefined
     }
@@ -35,25 +35,35 @@ function getProperty(node: ASTNode | undefined, name: string): string|number|boo
             .map(c => getUnquotedPropertyValue(c as AttributeNode))
             .pop()
 
+        if (attributeChild !== undefined) {
+            return attributeChild
+        }
+
         // find a block node with the name and wrap it up in a proxy
-        const blockChild: BlockNode | undefined = node.children
+        const blockChildren: BlockNode[] | undefined = node.children
             ?.filter(c =>
                 c.type === NodeType.BLOCK_NODE &&
                 c.name.value === name)
-            .map(c => new Proxy(c as BlockNode, {
-                get: function (target, name) {
-                    return getProperty(target, name.toString())
-                }
-            }))
-            .pop()
+            .map(c => c as BlockNode)
 
-        return attributeChild ?? blockChild
+        if (blockChildren) {
+            // An array of block children is distinguished by their first label, which is
+            // selected as if it were a property.
+            return new Proxy(blockChildren, {
+                get: function (target, name) {
+                    return target.filter(b => b.labels
+                        ?.map(l => JSON.parse(l.value.value))
+                        .pop() === name)
+                        .pop()
+                }
+            })
+        }
     }
 
     return undefined
 }
 
-function getUnquotedPropertyValue(node: AttributeNode | undefined): string|number|boolean|DictionaryNode|undefined {
+function getUnquotedPropertyValue(node: AttributeNode | undefined): string | number | boolean | DictionaryNode | undefined {
     if (!node || node.type !== NodeType.ATTRIBUTE_NODE) {
         return undefined
     }

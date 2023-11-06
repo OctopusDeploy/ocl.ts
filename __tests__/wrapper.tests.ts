@@ -66,6 +66,6 @@ test("Wrapper OCL property access", () => {
     expect(wrapper[0].number_value === 10)
     expect(wrapper[0].bool_value === false)
     expect(wrapper[0].properties['Octopus.Action.MaxParallelism'] === "100")
-    expect(wrapper[1].action_type === "Octopus.Script")
+    expect(wrapper[0].action['back-up-store-client-filesystem'].action_type === "Octopus.Script")
 
 })
