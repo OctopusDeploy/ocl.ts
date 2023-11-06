@@ -68,13 +68,14 @@ test("Wrapper OCL property access", () => {
     }
 }`)
 
-    expect(wrapper[0].action['upgrade-store-client-software'].properties['Octopus.Action.RunOnServer'] === "False")
-    expect(wrapper[0].action['upgrade-store-client-software'].packages['Pos.Client.Application'].properties[0].Purpose === "Second properties")
-    expect(wrapper[0].name === "Upgrade POS client software")
-    expect(wrapper[0].number_value === 10)
-    expect(wrapper[0].bool_value === false)
-    expect(wrapper[0].properties['Octopus.Action.MaxParallelism'] === "100")
-    expect(wrapper[0].action['back-up-store-client-filesystem'].action_type === "Octopus.Script")
+    expect(wrapper[0].action['upgrade-store-client-software'].properties['Octopus.Action.RunOnServer']).toEqual("false")
+    expect(wrapper[0].action['upgrade-store-client-software'].packages['Pos.Client.Application'].properties[1].Purpose).toEqual("Second properties")
+    expect(wrapper[0].action['upgrade-store-client-software'].packages['Pos.Client.Application'].properties[0].Purpose).toEqual("")
+    expect(wrapper[0].name).toEqual("Upgrade POS client software")
+    expect(wrapper[0].number_value).toEqual(10)
+    expect(wrapper[0].bool_value).toBeFalsy()
+    expect(wrapper[0].properties['Octopus.Action.MaxParallelism']).toEqual("100")
+    expect(wrapper[0].action['back-up-store-client-filesystem'].action_type).toEqual("Octopus.Script")
 
 
 })
