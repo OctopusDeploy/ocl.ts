@@ -186,20 +186,30 @@ step "upgrade-store-server-software" {
     }
 }`)
 
+    const json = JSON.stringify(wrapper, null, 2)
+    const parsedJson = JSON.parse(json)
+
+    console.log(json)
+
     // wrapper is read only
     wrapper.test = 'test'
     expect(wrapper.test).toBeUndefined()
+    expect(parsedJson.test).toBeUndefined()
 
     // The root node exposes blocks as an array
     expect(wrapper.step.length).toEqual(4)
 
     // Here we access the first step
     expect(wrapper.step[0].action.length).toEqual(2)
+    expect(parsedJson[0].action.length).toEqual(2)
     expect(wrapper.step[1].action.length).toEqual(1)
+    expect(parsedJson[1].action.length).toEqual(1)
 
     // Nodes are also accessible via labels. Here we access the step via its label
     expect(wrapper.step["back-up-store-client-filesystem"].action.length).toEqual(2)
+    expect(parsedJson.filter((s: any) => s.__labels.includes("back-up-store-client-filesystem"))[0].action.length).toEqual(2)
     expect(wrapper.step["back-up-store-server-filesystem"].action.length).toEqual(1)
+    expect(parsedJson.filter((s: any) => s.__labels.includes("back-up-store-server-filesystem"))[0].action.length).toEqual(1)
 
     // Missing labels are undefined
     expect(wrapper.step["does-not-exist"]).toBeUndefined()
@@ -207,9 +217,11 @@ step "upgrade-store-server-software" {
     // Some special properties to access a block's name and labels
     expect(wrapper.step["back-up-store-client-filesystem"].__labels[0]).toEqual("back-up-store-client-filesystem")
     expect(wrapper.step["back-up-store-client-filesystem"].__labels.length).toEqual(1)
+    expect(parsedJson.filter((s: any) => s.__labels.includes("back-up-store-client-filesystem"))[0].__labels.length).toEqual(1)
     expect(wrapper.step["back-up-store-client-filesystem"].__name).toEqual("step")
 
     // More tests that drill deeper into the structure
+    expect(wrapper.step["back-up-store-client-filesystem"].action['upgrade-store-client-software'].packages['Pos.Client.Application'][0].properties[0].Purpose).toEqual("")
     expect(wrapper.step["back-up-store-client-filesystem"].action['upgrade-store-client-software'].packages['Pos.Client.Application'][0].properties[0].Purpose).toEqual("")
     expect(wrapper.step["back-up-store-client-filesystem"].action['upgrade-store-client-software'].packages['does-not-exist']).toBeUndefined()
     expect(wrapper.step["back-up-store-client-filesystem"].action['upgrade-store-client-software'].packages['Pos.Client.Application'][0].properties[1].Purpose).toEqual("Second properties")

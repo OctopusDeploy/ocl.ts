@@ -1,7 +1,7 @@
 import {Lexer} from "./lexer";
 import {Parser} from "./parser";
-import type {AST, ASTNode, AttributeNode, BlockNode, DictionaryNode, LiteralNode} from "./ast";
-import {NodeType} from "./ast";
+import type {ArrayNode, AST, ASTNode, AttributeNode, BlockNode, DictionaryNode, LiteralNode} from "./ast";
+import {LiteralType, NodeType} from "./ast";
 import type {Token} from "./token";
 
 /**
@@ -34,6 +34,8 @@ export function parseOclWrapper(input: string): any {
 
                 return wrapChildArray(target, name.toString())
             },
+            ownKeys: ownKeys,
+            getOwnPropertyDescriptor: getOwnPropertyDescriptor,
             set: function () {
                 // no op - this is a read only object
                 return true
@@ -104,7 +106,9 @@ function getProperty(node: ASTNode | undefined, name: string): any {
                                 return new Proxy(firstChild, {
                                         get: function (target, name) {
                                             return getProperty(target, name.toString())
-                                        }
+                                        },
+                                        ownKeys: ownKeys,
+                                        getOwnPropertyDescriptor: getOwnPropertyDescriptor
                                     }
                                 )
                             }
@@ -138,7 +142,12 @@ function getUnquotedPropertyValue(node: AttributeNode | undefined): string | num
         const attValueNode = node.value as LiteralNode
         const litValueNode = attValueNode.value as Token
         const value = litValueNode.value
-        return JSON.parse(value)
+
+        if (attValueNode.literalType != LiteralType.INDENTED_HEREDOC && attValueNode.literalType != LiteralType.HEREDOC) {
+            return JSON.parse(value)
+        }
+
+        return value
     }
 
     if (node.value.type === NodeType.DICTIONARY_NODE) {
@@ -149,11 +158,70 @@ function getUnquotedPropertyValue(node: AttributeNode | undefined): string | num
             },
             get: function (target, name) {
                 return getProperty(target, name.toString())
-            }
+            },
+            ownKeys: ownKeys,
+            getOwnPropertyDescriptor: getOwnPropertyDescriptor
         })
     }
 
     return undefined
+}
+
+/**
+ * getOwnPropertyDescriptor is required to allow an object to be serialized to JSON. AST nodes with children expose
+ * the child values, otherwise hide all other properties.
+ */
+function getOwnPropertyDescriptor(target: any, prop: string | symbol) {
+    if (['AttributeNode', 'BlockNode', 'DictionaryNode'].includes(target.type)) {
+
+        if (['BlockNode'].includes(target.type)) {
+            if (prop === "__labels") {
+                return {
+                    configurable: true,
+                    enumerable: true,
+                    value: (target as BlockNode).labels
+                }
+            }
+        }
+
+        const value = getProperty((target as AttributeNode | BlockNode | DictionaryNode), prop.toString())
+        return {
+            configurable: true,
+            enumerable: true,
+            value: value
+        }
+    }
+
+    return {configurable: false, enumerable: false, value: undefined};
+}
+
+/**
+ * ownKeys is required to allow an object to be serialized to JSON. Any AST node with children exposes the
+ * children as properties. BlockNodes also expose labels with "__labels". Other properties are hidden.
+ */
+function ownKeys(target: any) {
+    if (['AttributeNode', 'BlockNode', 'DictionaryNode'].includes(target.type)) {
+        const keys = (target as AttributeNode | BlockNode).children
+            .filter(c => ['AttributeNode', 'BlockNode'].includes(c.type))
+            .map(c => (c as AttributeNode | BlockNode).name.value)
+            .filter((value, index, self) => self.indexOf(value) === index)
+
+        if ('BlockNode' == target.type) {
+            keys.push("__labels")
+        }
+
+        return keys
+    }
+
+    if (['EOFNode', 'LiteralNode', 'RecoveryNode'].includes(target.type)) {
+        return []
+    }
+
+    if (['ArrayNode'].includes(target.type)) {
+        return Reflect.ownKeys((target as ArrayNode).children)
+    }
+
+    return Reflect.ownKeys(target)
 }
 
 function wrapChildAttributes(target: AST, name: string) {
@@ -189,7 +257,9 @@ function wrapItem(item: any): any {
             },
             get: function (target, name) {
                 return getProperty(target, name.toString())
-            }
+            },
+            ownKeys: ownKeys,
+            getOwnPropertyDescriptor: getOwnPropertyDescriptor
         })
     }
 
@@ -198,7 +268,7 @@ function wrapItem(item: any): any {
 }
 
 function wrapChildArray(target: AST, name: string) {
-    const children = target
+    const children: BlockNode[] = target
         .filter(c => c.type == NodeType.BLOCK_NODE)
         .map(c => c as BlockNode)
         .filter(c => c.name.value === name)
@@ -209,7 +279,7 @@ function wrapChildArray(target: AST, name: string) {
                 // no op - this is a read only object
                 return true
             },
-            get: function (target, name) {
+            get: function (target: BlockNode[], name) {
                 // return any array based properties as normal
                 if (name in target) {
                     return wrapItem(target[name as any]);
@@ -249,7 +319,9 @@ function wrapChildArray(target: AST, name: string) {
                 }
 
                 return undefined
-            }
+            },
+            ownKeys: ownKeys,
+            getOwnPropertyDescriptor: getOwnPropertyDescriptor
         })
     }
 
