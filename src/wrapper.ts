@@ -21,7 +21,7 @@ export function parseSteps(input: string) {
     })) as any
 }
 
-function getProperty(node: ASTNode | undefined, name: string): string | number | boolean | BlockNode[] | DictionaryNode | undefined {
+function getProperty(node: ASTNode | undefined, name: string): string | number | boolean | DictionaryNode | (string | number | boolean | DictionaryNode | undefined)[] | BlockNode[] | undefined {
     if (!node || !name) {
         return undefined
     }
@@ -33,9 +33,11 @@ function getProperty(node: ASTNode | undefined, name: string): string | number |
                 c.type === NodeType.ATTRIBUTE_NODE &&
                 c.name.value === name)
             .map(c => getUnquotedPropertyValue(c as AttributeNode))
-            .pop()
 
-        if (attributeChild !== undefined) {
+        if (attributeChild !== undefined && attributeChild.length != 0) {
+            if (attributeChild.length === 1) {
+                return attributeChild.pop()
+            }
             return attributeChild
         }
 
