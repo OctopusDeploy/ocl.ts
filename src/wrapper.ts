@@ -26,7 +26,7 @@ function getProperty(node: ASTNode | undefined, name: string): string | number |
         return undefined
     }
 
-    if (node.type === NodeType.BLOCK_NODE) {
+    if (node.type === NodeType.BLOCK_NODE || node.type == NodeType.DICTIONARY_NODE) {
         // find an attribute node with the name and return the raw value
         const attributeChild = node.children
             ?.filter(c =>
