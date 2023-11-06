@@ -127,7 +127,7 @@ function getOwnPropertyDescriptor(target: any, prop: string | symbol) {
         return {
             configurable: true,
             enumerable: true,
-            value: target.value.value.value
+            value: getUnquotedPropertyValue(target)
         }
     }
 

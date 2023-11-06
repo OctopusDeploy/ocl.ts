@@ -187,7 +187,13 @@ step "upgrade-store-server-software" {
     }
 }
 
-int_attribute = 1`)
+int_attribute = 1
+
+properties = {
+    Extract = "False"
+    Purpose = ""
+    SelectionMode = "immediate"
+}`)
 
     const json = JSON.stringify(wrapper, null, 2)
     const parsedJson = JSON.parse(json)
