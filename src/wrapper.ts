@@ -72,60 +72,7 @@ function getProperty(node: ASTNode | undefined, name: string): any {
             return attributes
         }
 
-        // find block nodes with the name and wrap it up in a proxy
-        const blockChildren: BlockNode[] | undefined = node.children
-            ?.filter(c =>
-                c.type === NodeType.BLOCK_NODE &&
-                c.name.value === name)
-            .map(c => c as BlockNode)
-
-        if (blockChildren && blockChildren.length != 0) {
-            // An array of block children is distinguished by their first label, which is
-            // selected as if it were a property.
-            return new Proxy(blockChildren, {
-                set: set,
-                get: function (target, name) {
-
-                    // return any array based properties as normal
-                    if (name in target) {
-                        return wrapItem(target[name as any]);
-                    }
-
-                    // Otherwise, look up the child based on a label
-                    const children = target.filter(b => b.labels
-                        ?.map(l => JSON.parse(l.value.value))
-                        .pop() === name)
-
-                    if (children) {
-                        if (children.length === 1) {
-                            // If there is one child, return it directly
-                            const firstChild = children.pop()
-                            if (firstChild) {
-                                return new Proxy(firstChild, {
-                                        get: function (target, name) {
-                                            return getProperty(target, name.toString())
-                                        },
-                                        ownKeys: ownKeys,
-                                        getOwnPropertyDescriptor: getOwnPropertyDescriptor
-                                    }
-                                )
-                            }
-                        } else if (children.length > 1) {
-                            // If there are multiple children (for example, there are blocks with the same label), return
-                            // an array of children
-                            return children.map(c => new Proxy(c, {
-                                    get: function (target, name) {
-                                        return getProperty(target, name.toString())
-                                    }
-                                }
-                            ))
-                        }
-                    }
-
-                    return undefined
-                }
-            })
-        }
+        return wrapChildArray(node.children, name)
     }
 
     return undefined
