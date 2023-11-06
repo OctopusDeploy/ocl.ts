@@ -1,6 +1,6 @@
 import {Lexer} from "./lexer";
 import {Parser} from "./parser";
-import type {ASTNode, AttributeNode, BlockNode, LiteralNode} from "./ast";
+import type {ASTNode, AttributeNode, BlockNode, DictionaryNode, LiteralNode} from "./ast";
 import {NodeType} from "./ast";
 import type {Token} from "./token";
 
@@ -13,15 +13,15 @@ import type {Token} from "./token";
 export function parseSteps(input: string) {
     const lexer = new Lexer(input)
     const parser = new Parser(lexer)
-
-    return parser.getAST().map(step => new Proxy(step, {
+    const ast = parser.getAST()
+    return ast.map(step => new Proxy(step, {
         get: function (target, name) {
             return getProperty(target, name.toString())
         }
-    }))
+    })) as any
 }
 
-function getProperty(node: ASTNode | undefined, name: string): string|number|boolean|BlockNode|undefined {
+function getProperty(node: ASTNode | undefined, name: string): string|number|boolean|BlockNode|DictionaryNode|undefined {
     if (!node || !name) {
         return undefined
     }
@@ -53,13 +53,25 @@ function getProperty(node: ASTNode | undefined, name: string): string|number|boo
     return undefined
 }
 
-function getUnquotedPropertyValue(node: AttributeNode | undefined): string|number|boolean|undefined {
+function getUnquotedPropertyValue(node: AttributeNode | undefined): string|number|boolean|DictionaryNode|undefined {
     if (!node || node.type !== NodeType.ATTRIBUTE_NODE) {
         return undefined
     }
 
-    const attValueNode = node.value as LiteralNode
-    const litValueNode = attValueNode.value as Token
-    const value = litValueNode.value
-    return JSON.parse(value)
+    if (node.value.type == NodeType.LITERAL_NODE) {
+        const attValueNode = node.value as LiteralNode
+        const litValueNode = attValueNode.value as Token
+        const value = litValueNode.value
+        return JSON.parse(value)
+    }
+
+    if (node.value.type === NodeType.DICTIONARY_NODE) {
+        return new Proxy(node.value, {
+            get: function (target, name) {
+                return getProperty(target, name.toString())
+            }
+        })
+    }
+
+    return undefined
 }
