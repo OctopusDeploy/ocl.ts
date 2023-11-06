@@ -35,10 +35,7 @@ export function parseOclWrapper(input: string): any {
             },
             ownKeys: ownKeys,
             getOwnPropertyDescriptor: getOwnPropertyDescriptor,
-            set: function () {
-                // no op - this is a read only object
-                return true
-            }
+            set: set
         }
     )
 }
@@ -86,10 +83,7 @@ function getProperty(node: ASTNode | undefined, name: string): any {
             // An array of block children is distinguished by their first label, which is
             // selected as if it were a property.
             return new Proxy(blockChildren, {
-                set: function () {
-                    // no op - this is a read only object
-                    return true
-                },
+                set: set,
                 get: function (target, name) {
 
                     // return any array based properties as normal
@@ -160,10 +154,7 @@ function getUnquotedPropertyValue(node: AttributeNode | undefined): string | num
 
     if (node.value.type === NodeType.DICTIONARY_NODE) {
         return new Proxy(node.value, {
-            set: function () {
-                // no op - this is a read only object
-                return true
-            },
+            set: set,
             get: function (target, name) {
                 return getProperty(target, name.toString())
             },
@@ -265,10 +256,7 @@ function wrapItem(item: any): any {
     if (typeof item === 'object') {
         // this has to be proxied
         return new Proxy(item, {
-            set: function () {
-                // no op - this is a read only object
-                return true
-            },
+            set: set,
             get: function (target, name) {
                 return getProperty(target, name.toString())
             },
@@ -282,7 +270,14 @@ function wrapItem(item: any): any {
 }
 
 /**
- * Return the a collection of block nodes that are themselves proxied to return a single block matching the label
+ * A no-op set trap because the proxies are read only objects
+ */
+function set() {
+    return true
+}
+
+/**
+ * Return a collection of block nodes that are themselves proxied to return a single block matching the label
  * or a collection if there are multiple blocks with the same label. Return undefined if no blocks match the name,
  * @param target The target node
  * @param name The name of the child block to return
@@ -295,10 +290,7 @@ function wrapChildArray(target: AST, name: string) {
 
     if (children && children.length != 0) {
         return new Proxy(children, {
-            set: function () {
-                // no op - this is a read only object
-                return true
-            },
+            set: set,
             get: function (target: BlockNode[], name) {
                 // return any array based properties as normal
                 if (name in target) {
@@ -314,10 +306,7 @@ function wrapChildArray(target: AST, name: string) {
                     const child = children.pop()
                     if (child) {
                         return new Proxy(child, {
-                            set: function () {
-                                // no op - this is a read only object
-                                return true
-                            },
+                            set: set,
                             get: function (target, name) {
                                 return getProperty(target, name.toString())
                             }
@@ -328,10 +317,7 @@ function wrapChildArray(target: AST, name: string) {
                 if (children.length > 1) {
 
                     return children.map(c => new Proxy(c, {
-                        set: function () {
-                            // no op - this is a read only object
-                            return true
-                        },
+                        set: set,
                         get: function (target, name) {
                             return getProperty(target, name.toString())
                         }
