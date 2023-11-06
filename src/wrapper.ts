@@ -26,8 +26,23 @@ function getProperty(node: ASTNode | undefined, name: string): string | number |
         return undefined
     }
 
+    // __labels and __name are special property that returns the labels assigned to the block
+    // and tyhe name of the block
+    if (node.type === NodeType.BLOCK_NODE ) {
+        if (name === "__labels") {
+            return node.labels?.map(l => JSON.parse(l.value.value))
+        }
+    }
+
+    if (node.type === NodeType.BLOCK_NODE || node.type == NodeType.ATTRIBUTE_NODE) {
+        if (name === "__name") {
+            return node.name.value
+        }
+    }
+
+    // Otherwise we try to find the children with the supplied name
     if (node.type === NodeType.BLOCK_NODE || node.type == NodeType.DICTIONARY_NODE) {
-        // find an attribute node with the name and return the raw value
+        // find attribute nodes with the name and return the raw value
         const attributeChild = node.children
             ?.filter(c =>
                 c.type === NodeType.ATTRIBUTE_NODE &&
@@ -41,7 +56,7 @@ function getProperty(node: ASTNode | undefined, name: string): string | number |
             return attributeChild
         }
 
-        // find a block node with the name and wrap it up in a proxy
+        // find block nodes with the name and wrap it up in a proxy
         const blockChildren: BlockNode[] | undefined = node.children
             ?.filter(c =>
                 c.type === NodeType.BLOCK_NODE &&
