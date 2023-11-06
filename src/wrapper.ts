@@ -51,10 +51,21 @@ function getProperty(node: ASTNode | undefined, name: string): string | number |
             // selected as if it were a property.
             return new Proxy(blockChildren, {
                 get: function (target, name) {
-                    return target.filter(b => b.labels
+                    const child = target.filter(b => b.labels
                         ?.map(l => JSON.parse(l.value.value))
                         .pop() === name)
                         .pop()
+
+                    if (child) {
+                        return new Proxy(child, {
+                                get: function (target, name) {
+                                    return getProperty(target, name.toString())
+                                }
+                            }
+                        )
+                    }
+
+                    return undefined
                 }
             })
         }
