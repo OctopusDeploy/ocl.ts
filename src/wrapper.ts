@@ -5,9 +5,8 @@ import {LiteralType, NodeType} from "./ast";
 import type {Token} from "./token";
 
 /**
- * Returns an array of proxies that wrap the AST Nodes parsed from the OCL file. The proxy allows
- * regular property access to the OCL properties, allowing the returned objects to be treated like
- * regular JavaScript objects.
+ * Return a proxied "root node" that allows the AST to be traversed with simple dot notation. The proxy
+ * also returns the correct metadata to allow it to be serialized to JSON.
  * @param input The OCL to parse
  */
 export function parseOclWrapper(input: string): any {
@@ -44,6 +43,11 @@ export function parseOclWrapper(input: string): any {
     )
 }
 
+/**
+ * Get a property from a AST node. Properties map to the children of block or dictionary nodes.
+ * @param node The node to return the child from
+ * @param name The name of the child/property
+ */
 function getProperty(node: ASTNode | undefined, name: string): any {
     if (!node || !name) {
         return undefined
@@ -133,6 +137,10 @@ function getProperty(node: ASTNode | undefined, name: string): any {
     return undefined
 }
 
+/**
+ * Return a plain JavaScript value for attribute nodes. HereDocs are returned in their unprocessed form.
+ * @param node The node to return the value of.
+ */
 function getUnquotedPropertyValue(node: AttributeNode | undefined): string | number | boolean | DictionaryNode | undefined {
     if (!node || node.type !== NodeType.ATTRIBUTE_NODE) {
         return undefined
@@ -224,6 +232,12 @@ function ownKeys(target: any) {
     return Reflect.ownKeys(target)
 }
 
+/**
+ * Return a single value where appropriate, an array of values where the property lookup had duplicate values, or
+ * undefined if there is no attribute node with the supplied name.
+ * @param target The target node
+ * @param name The name of the property
+ */
 function wrapChildAttributes(target: AST, name: string) {
     const attributes = target
         ?.filter(c =>
@@ -267,6 +281,12 @@ function wrapItem(item: any): any {
     return item
 }
 
+/**
+ * Return the a collection of block nodes that are themselves proxied to return a single block matching the label
+ * or a collection if there are multiple blocks with the same label. Return undefined if no blocks match the name,
+ * @param target The target node
+ * @param name The name of the child block to return
+ */
 function wrapChildArray(target: AST, name: string) {
     const children: BlockNode[] = target
         .filter(c => c.type == NodeType.BLOCK_NODE)
