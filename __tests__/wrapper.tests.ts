@@ -1,7 +1,8 @@
 import {parseOclWrapper} from "../src/wrapper";
 
 test("Wrapper OCL property access", () => {
-    const wrapper = parseOclWrapper(`step "back-up-store-client-filesystem" {
+    const wrapper = parseOclWrapper(`
+step "back-up-store-client-filesystem" {
     name = "Upgrade POS client software"
     number_value = 10
     bool_value = false
@@ -184,7 +185,9 @@ step "upgrade-store-server-software" {
             }
         }
     }
-}`)
+}
+
+int_attribute = 1`)
 
     const json = JSON.stringify(wrapper, null, 2)
     const parsedJson = JSON.parse(json)
@@ -205,11 +208,15 @@ step "upgrade-store-server-software" {
     expect(wrapper.step[1].action.length).toEqual(1)
     expect(parsedJson[1].action.length).toEqual(1)
 
+    // here we read the last item, which is a floating attribute
+    expect(wrapper.int_attribute).toEqual(1)
+    expect(parsedJson[4].int_attribute).toEqual(1)
+
     // Nodes are also accessible via labels. Here we access the step via its label
     expect(wrapper.step["back-up-store-client-filesystem"].action.length).toEqual(2)
-    expect(parsedJson.filter((s: any) => s.__labels.includes("back-up-store-client-filesystem"))[0].action.length).toEqual(2)
+    expect(parsedJson.filter((s: any) => s.__labels?.includes("back-up-store-client-filesystem"))[0].action.length).toEqual(2)
     expect(wrapper.step["back-up-store-server-filesystem"].action.length).toEqual(1)
-    expect(parsedJson.filter((s: any) => s.__labels.includes("back-up-store-server-filesystem"))[0].action.length).toEqual(1)
+    expect(parsedJson.filter((s: any) => s.__labels?.includes("back-up-store-server-filesystem"))[0].action.length).toEqual(1)
 
     // Missing labels are undefined
     expect(wrapper.step["does-not-exist"]).toBeUndefined()
@@ -217,7 +224,7 @@ step "upgrade-store-server-software" {
     // Some special properties to access a block's name and labels
     expect(wrapper.step["back-up-store-client-filesystem"].__labels[0]).toEqual("back-up-store-client-filesystem")
     expect(wrapper.step["back-up-store-client-filesystem"].__labels.length).toEqual(1)
-    expect(parsedJson.filter((s: any) => s.__labels.includes("back-up-store-client-filesystem"))[0].__labels.length).toEqual(1)
+    expect(parsedJson.filter((s: any) => s.__labels?.includes("back-up-store-client-filesystem"))[0].__labels.length).toEqual(1)
     expect(wrapper.step["back-up-store-client-filesystem"].__name).toEqual("step")
 
     // More tests that drill deeper into the structure

@@ -56,9 +56,7 @@ function getProperty(node: ASTNode | undefined, name: string): any {
         if (name === "__labels") {
             return node.labels?.map(l => JSON.parse(l.value.value))
         }
-    }
 
-    if (node.type === NodeType.BLOCK_NODE || node.type == NodeType.ATTRIBUTE_NODE) {
         if (name === "__name") {
             return node.name.value
         }
@@ -73,6 +71,10 @@ function getProperty(node: ASTNode | undefined, name: string): any {
         }
 
         return wrapChildArray(node.children, name)
+    }
+
+    if (node.type == NodeType.ATTRIBUTE_NODE) {
+        return getUnquotedPropertyValue(node)
     }
 
     return undefined
@@ -118,7 +120,26 @@ function getUnquotedPropertyValue(node: AttributeNode | undefined): string | num
  * the child values, otherwise hide all other properties.
  */
 function getOwnPropertyDescriptor(target: any, prop: string | symbol) {
+
+    // A "floating" attribute node
+    if ('AttributeNode' === target.type && target.name.value === prop.toString())
+    {
+        return {
+            configurable: true,
+            enumerable: true,
+            value: target.value.value.value
+        }
+    }
+
     if (['AttributeNode', 'BlockNode', 'DictionaryNode'].includes(target.type)) {
+
+        if (prop === "__name") {
+            return {
+                configurable: true,
+                enumerable: true,
+                value: target.name
+            }
+        }
 
         if (['BlockNode'].includes(target.type)) {
             if (prop === "__labels") {
@@ -147,10 +168,21 @@ function getOwnPropertyDescriptor(target: any, prop: string | symbol) {
  */
 function ownKeys(target: any) {
     if (['AttributeNode', 'BlockNode', 'DictionaryNode'].includes(target.type)) {
-        const keys = (target as AttributeNode | BlockNode).children
+
+        // A "floating" attribute node
+        if ('AttributeNode' === target.type && !target.parent)
+        {
+            return [target.name.value]
+        }
+
+        const typedTarget = target as AttributeNode | BlockNode | DictionaryNode
+
+        const keys = typedTarget.children
             .filter(c => ['AttributeNode', 'BlockNode'].includes(c.type))
             .map(c => (c as AttributeNode | BlockNode).name.value)
             .filter((value, index, self) => self.indexOf(value) === index)
+
+        keys.push("__name")
 
         if ('BlockNode' == target.type) {
             keys.push("__labels")
