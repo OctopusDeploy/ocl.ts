@@ -20,6 +20,9 @@ export function parseOclWrapper(input: string): any {
         be returned by name.
      */
     return new Proxy(ast, {
+            ownKeys: ownKeys,
+            getOwnPropertyDescriptor: getOwnPropertyDescriptor,
+            set: set,
             get: function (target, name): any {
                 // return any array based properties as normal
                 if (name in target) {
@@ -32,10 +35,7 @@ export function parseOclWrapper(input: string): any {
                 }
 
                 return wrapChildArray(target, name.toString())
-            },
-            ownKeys: ownKeys,
-            getOwnPropertyDescriptor: getOwnPropertyDescriptor,
-            set: set
+            }
         }
     )
 }
@@ -51,7 +51,7 @@ function getProperty(node: ASTNode | undefined, name: string): any {
     }
 
     // __labels and __name are special property that returns the labels assigned to the block
-    // and tyhe name of the block
+    // and the name of the block
     if (node.type === NodeType.BLOCK_NODE) {
         if (name === "__labels") {
             return node.labels?.map(l => JSON.parse(l.value.value))
@@ -103,12 +103,12 @@ function getUnquotedPropertyValue(node: AttributeNode | undefined): string | num
 
     if (node.value.type === NodeType.DICTIONARY_NODE) {
         return new Proxy(node.value, {
+            ownKeys: ownKeys,
+            getOwnPropertyDescriptor: getOwnPropertyDescriptor,
             set: set,
             get: function (target, name) {
                 return getProperty(target, name.toString())
-            },
-            ownKeys: ownKeys,
-            getOwnPropertyDescriptor: getOwnPropertyDescriptor
+            }
         })
     }
 
@@ -122,13 +122,16 @@ function getUnquotedPropertyValue(node: AttributeNode | undefined): string | num
 function getOwnPropertyDescriptor(target: any, prop: string | symbol) {
 
     // A "floating" attribute node
-    if ('AttributeNode' === target.type && target.name.value === prop.toString())
-    {
-        return {
-            configurable: true,
-            enumerable: true,
-            value: getUnquotedPropertyValue(target)
+    if ('AttributeNode' === target.type && !target.parent) {
+        if (target.name.value === prop.toString()) {
+            return {
+                configurable: true,
+                enumerable: true,
+                value: getUnquotedPropertyValue(target)
+            }
         }
+
+        return undefined
     }
 
     if (['AttributeNode', 'BlockNode', 'DictionaryNode'].includes(target.type)) {
@@ -152,14 +155,17 @@ function getOwnPropertyDescriptor(target: any, prop: string | symbol) {
         }
 
         const value = getProperty((target as AttributeNode | BlockNode | DictionaryNode), prop.toString())
-        return {
-            configurable: true,
-            enumerable: true,
-            value: value
+
+        if (value !== undefined) {
+            return {
+                configurable: true,
+                enumerable: true,
+                value: value
+            }
         }
     }
 
-    return {configurable: false, enumerable: false, value: undefined};
+    return Object.getOwnPropertyDescriptor(target, prop)
 }
 
 /**
@@ -170,8 +176,7 @@ function ownKeys(target: any) {
     if (['AttributeNode', 'BlockNode', 'DictionaryNode'].includes(target.type)) {
 
         // A "floating" attribute node
-        if ('AttributeNode' === target.type && !target.parent)
-        {
+        if ('AttributeNode' === target.type && !target.parent) {
             return [target.name.value]
         }
 
@@ -236,11 +241,11 @@ function wrapItem(item: any): any {
         // this has to be proxied
         return new Proxy(item, {
             set: set,
+            ownKeys: ownKeys,
+            getOwnPropertyDescriptor: getOwnPropertyDescriptor,
             get: function (target, name) {
                 return getProperty(target, name.toString())
-            },
-            ownKeys: ownKeys,
-            getOwnPropertyDescriptor: getOwnPropertyDescriptor
+            }
         })
     }
 
@@ -270,6 +275,8 @@ function wrapChildArray(target: AST, name: string) {
     if (children && children.length != 0) {
         return new Proxy(children, {
             set: set,
+            ownKeys: ownKeys,
+            getOwnPropertyDescriptor: getOwnPropertyDescriptor,
             get: function (target: BlockNode[], name) {
                 // return any array based properties as normal
                 if (name in target) {
@@ -286,6 +293,8 @@ function wrapChildArray(target: AST, name: string) {
                     if (child) {
                         return new Proxy(child, {
                             set: set,
+                            ownKeys: ownKeys,
+                            getOwnPropertyDescriptor: getOwnPropertyDescriptor,
                             get: function (target, name) {
                                 return getProperty(target, name.toString())
                             }
@@ -297,6 +306,8 @@ function wrapChildArray(target: AST, name: string) {
 
                     return children.map(c => new Proxy(c, {
                         set: set,
+                        ownKeys: ownKeys,
+                        getOwnPropertyDescriptor: getOwnPropertyDescriptor,
                         get: function (target, name) {
                             return getProperty(target, name.toString())
                         }
@@ -304,9 +315,7 @@ function wrapChildArray(target: AST, name: string) {
                 }
 
                 return undefined
-            },
-            ownKeys: ownKeys,
-            getOwnPropertyDescriptor: getOwnPropertyDescriptor
+            }
         })
     }
 

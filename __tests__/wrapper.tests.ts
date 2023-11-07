@@ -1,7 +1,7 @@
 import {parseOclWrapper} from "../src/wrapper";
 
 test("Wrapper OCL property access", () => {
-    const wrapper = parseOclWrapper(`
+    const testocl = `
 step "back-up-store-client-filesystem" {
     name = "Upgrade POS client software"
     number_value = 10
@@ -193,8 +193,11 @@ properties = {
     Extract = "False"
     Purpose = ""
     SelectionMode = "immediate"
-}`)
+}`
 
+    const wrapper = parseOclWrapper(testocl)
+
+    // JSON parsing
     const json = JSON.stringify(wrapper, null, 2)
     const parsedJson = JSON.parse(json)
 
