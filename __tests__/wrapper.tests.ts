@@ -1,4 +1,5 @@
 import {parseOclWrapper} from "../src/wrapper";
+import deepEqual from 'deep-equal';
 
 test("Wrapper OCL property access", () => {
     const testocl = `
@@ -196,6 +197,13 @@ properties = {
 }`
 
     const wrapper = parseOclWrapper(testocl)
+    const wrapper2 = parseOclWrapper(testocl)
+    const wrapper3 = parseOclWrapper("int_attribute = 2")
+    const wrapper4 = parseOclWrapper("int_attribute = 3")
+
+    // Test deep equality
+    expect(deepEqual(wrapper, wrapper2)).toBeTruthy()
+    expect(deepEqual(wrapper3, wrapper4)).toBeFalsy()
 
     // JSON parsing
     const json = JSON.stringify(wrapper, null, 2)
