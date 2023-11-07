@@ -218,6 +218,7 @@ properties = {
 
     // here we read the last item, which is a floating attribute
     expect(wrapper.int_attribute).toEqual(1)
+    expect(wrapper[4].int_attribute).toEqual(1)
     expect(parsedJson[4].int_attribute).toEqual(1)
 
     // Nodes are also accessible via labels. Here we access the step via its label
