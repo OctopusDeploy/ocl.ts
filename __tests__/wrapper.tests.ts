@@ -210,8 +210,10 @@ properties = {
 
     // Here we access the first step
     expect(wrapper.step[0].action.length).toEqual(2)
+    expect(wrapper[0].action.length).toEqual(2)
     expect(parsedJson[0].action.length).toEqual(2)
     expect(wrapper.step[1].action.length).toEqual(1)
+    expect(wrapper[1].action.length).toEqual(1)
     expect(parsedJson[1].action.length).toEqual(1)
 
     // here we read the last item, which is a floating attribute
@@ -235,10 +237,18 @@ properties = {
 
     // More tests that drill deeper into the structure
     expect(wrapper.step["back-up-store-client-filesystem"].action['upgrade-store-client-software'].packages['Pos.Client.Application'][0].properties[0].Purpose).toEqual("")
+
+    // steps can be accessed via an index
+    expect(wrapper.step[0].action[1].packages[0].properties[0].Purpose).toEqual("")
+
+    // The children of the root node are directly indexable too
+    expect(wrapper[0].action[1].packages['Pos.Client.Application'][0].properties[0].Purpose).toEqual("")
     expect(wrapper.step["back-up-store-client-filesystem"].action['upgrade-store-client-software'].packages['Pos.Client.Application'][0].properties[0].Purpose).toEqual("")
     expect(wrapper.step["back-up-store-client-filesystem"].action['upgrade-store-client-software'].packages['does-not-exist']).toBeUndefined()
     expect(wrapper.step["back-up-store-client-filesystem"].action['upgrade-store-client-software'].packages['Pos.Client.Application'][0].properties[1].Purpose).toEqual("Second properties")
+    expect(wrapper.step[0].action[1].packages[0].properties[1].Purpose).toEqual("Second properties")
     expect(wrapper.step["back-up-store-client-filesystem"].action['upgrade-store-client-software'].packages['Pos.Client.Application'][1].properties[1].Purpose).toEqual("Third properties")
+    expect(wrapper.step[0].action[1].packages[1].properties[1].Purpose).toEqual("Third properties")
     expect(wrapper.step["back-up-store-client-filesystem"].action['upgrade-store-client-software'].packages['Pos.Client.Application'][1].properties[0].Purpose).toEqual("")
     expect(wrapper.step["back-up-store-client-filesystem"].action['upgrade-store-client-software'].properties['Octopus.Action.RunOnServer']).toEqual("false")
     expect(wrapper.step["back-up-store-client-filesystem"].action[0].properties['Octopus.Action.RunOnServer']).toEqual("false")
@@ -249,5 +259,4 @@ properties = {
     expect(wrapper.step["back-up-store-client-filesystem"].properties['Octopus.Action.MaxParallelism']).toEqual("100")
     expect(wrapper.step["back-up-store-client-filesystem"].action['back-up-store-client-filesystem'].action_type).toEqual("Octopus.Script")
     expect(wrapper.step["back-up-store-client-filesystem"].action[1].action_type).toEqual("Octopus.Script")
-
 })
