@@ -19,25 +19,21 @@ export function parseOclWrapper(input: string): any {
         any requests to an index or properties like length, but also allows blocks and attributes to
         be returned by name.
      */
-    return new Proxy(ast, {
-            ownKeys: ownKeys,
-            getOwnPropertyDescriptor: getOwnPropertyDescriptor,
-            set: set,
-            get: function (target, name): any {
-                // return any array based properties as normal
-                if (name in target) {
-                    return wrapItem(target[name as any]);
-                }
-
-                const attributes = wrapChildAttributes(target, name.toString())
-                if (attributes != undefined) {
-                    return attributes
-                }
-
-                return wrapChildArray(target, name.toString())
+    return buildProxy(ast,
+        function (target, name): any {
+            // return any array based properties as normal
+            if (name in target) {
+                return wrapItem(target[name as any]);
             }
-        }
-    )
+
+            const attributes = wrapChildAttributes(target, name.toString())
+            if (attributes != undefined) {
+                return attributes
+            }
+
+            return wrapChildArray(target, name.toString())
+        })
+
 }
 
 /**
@@ -102,14 +98,11 @@ function getUnquotedPropertyValue(node: AttributeNode | undefined): string | num
     }
 
     if (node.value.type === NodeType.DICTIONARY_NODE) {
-        return new Proxy(node.value, {
-            ownKeys: ownKeys,
-            getOwnPropertyDescriptor: getOwnPropertyDescriptor,
-            set: set,
-            get: function (target, name) {
+        return buildProxy(node.value,
+            function (target, name) {
                 return getProperty(target, name.toString())
             }
-        })
+        )
     }
 
     return undefined
@@ -121,7 +114,7 @@ function getUnquotedPropertyValue(node: AttributeNode | undefined): string | num
  */
 function getOwnPropertyDescriptor(target: any, prop: string | symbol) {
 
-    // A "floating" attribute node
+    // An attribute assigned to the "root" node
     if ('AttributeNode' === target.type && !target.parent) {
         if (target.name.value === prop.toString()) {
             return {
@@ -135,7 +128,6 @@ function getOwnPropertyDescriptor(target: any, prop: string | symbol) {
     }
 
     if (['AttributeNode', 'BlockNode', 'DictionaryNode'].includes(target.type)) {
-
         if (prop === "__name") {
             return {
                 configurable: true,
@@ -239,14 +231,11 @@ function wrapItem(item: any): any {
     // assume an object being returned was an index lookup
     if (typeof item === 'object') {
         // this has to be proxied
-        return new Proxy(item, {
-            set: set,
-            ownKeys: ownKeys,
-            getOwnPropertyDescriptor: getOwnPropertyDescriptor,
-            get: function (target, name) {
+        return buildProxy(item,
+            function (target, name) {
                 return getProperty(target, name.toString())
             }
-        })
+        )
     }
 
     // anything else is assumed to be a lookup like "length"
@@ -273,11 +262,8 @@ function wrapChildArray(target: AST, name: string) {
         .filter(c => c.name.value === name)
 
     if (children && children.length != 0) {
-        return new Proxy(children, {
-            set: set,
-            ownKeys: ownKeys,
-            getOwnPropertyDescriptor: getOwnPropertyDescriptor,
-            get: function (target: BlockNode[], name) {
+        return buildProxy(children,
+            function (target: BlockNode[], name) {
                 // return any array based properties as normal
                 if (name in target) {
                     return wrapItem(target[name as any]);
@@ -288,36 +274,46 @@ function wrapChildArray(target: AST, name: string) {
                     ?.map(l => JSON.parse(l.value.value))
                     .pop() === name)
 
+                // Return a single child as a property
                 if (children.length === 1) {
                     const child = children.pop()
                     if (child) {
-                        return new Proxy(child, {
-                            set: set,
-                            ownKeys: ownKeys,
-                            getOwnPropertyDescriptor: getOwnPropertyDescriptor,
-                            get: function (target, name) {
+                        return buildProxy(child,
+                            function (target, name) {
                                 return getProperty(target, name.toString())
                             }
-                        })
+                        )
                     }
                 }
 
+                // Return a collection of children as an array
                 if (children.length > 1) {
-
-                    return children.map(c => new Proxy(c, {
-                        set: set,
-                        ownKeys: ownKeys,
-                        getOwnPropertyDescriptor: getOwnPropertyDescriptor,
-                        get: function (target, name) {
+                    return children.map(c => buildProxy(c,
+                        function (target, name) {
                             return getProperty(target, name.toString())
                         }
-                    }))
+                    ))
                 }
 
                 return undefined
             }
-        })
+        )
     }
 
     return undefined
+}
+
+/**
+ * Builds a proxy object with common traps for ownKeys and getOwnPropertyDescriptor that allow for functions like
+ * JSON.stringify() to work as expected.
+ * @param target The object to proxy
+ * @param getFunc The get trap used to return a property
+ */
+function buildProxy<T extends object>(target: T, getFunc: (target: T, p: string | symbol, receiver: any) => any): T {
+    return new Proxy(target, {
+        set: set,
+        ownKeys: ownKeys,
+        getOwnPropertyDescriptor: getOwnPropertyDescriptor,
+        get: getFunc
+    })
 }
