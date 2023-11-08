@@ -1,5 +1,6 @@
 import {parseOclWrapper} from "../src/wrapper";
 import deepEqual from 'deep-equal';
+import _ = require("lodash");
 
 test("Wrapper OCL property access", () => {
     const testocl = `
@@ -204,6 +205,62 @@ properties = {
     // Test deep equality
     expect(deepEqual(wrapper, wrapper2)).toBeTruthy()
     expect(deepEqual(wrapper3, wrapper4)).toBeFalsy()
+
+    // Clone the objects
+    const clone = _.cloneDeep(wrapper)
+    const clone2 = _.cloneDeep(wrapper2)
+    expect(_.isEqual(clone, clone2)).toBeTruthy()
+
+    // Do some deeper manipulation of objects to simulate advanced comparisons
+    const stepExample = `step "back-up-store-server-filesystem" {
+    name = "Back up store server filesystem"
+    properties = {
+        Octopus.Action.TargetRoles = "pos-server"
+    }
+
+    action {
+        action_type = "Octopus.Script"
+        properties = {
+            Octopus.Action.RunOnServer = "false"
+            Octopus.Action.Script.ScriptBody = <<-EOT
+                Write-Highlight "Backing up store server filesystem"
+                
+                Start-Sleep 5
+                
+                Write-Highlight "Finished backing up store server filesystem"
+                    EOT
+            Octopus.Action.Script.ScriptSource = "Inline"
+            Octopus.Action.Script.Syntax = "PowerShell"
+        }
+    }
+}`
+    const stepExampleWithDifferentName = `step "back-up-store-server-filesystem" {
+    name = "This has been edited"
+    properties = {
+        Octopus.Action.TargetRoles = "pos-server"
+    }
+
+    action {
+        action_type = "Octopus.Script"
+        properties = {
+            Octopus.Action.RunOnServer = "false"
+            Octopus.Action.Script.ScriptBody = <<-EOT
+                Write-Highlight "Backing up store server filesystem"
+                
+                Start-Sleep 5
+                
+                Write-Highlight "Finished backing up store server filesystem"
+                    EOT
+            Octopus.Action.Script.ScriptSource = "Inline"
+            Octopus.Action.Script.Syntax = "PowerShell"
+        }
+    }
+}`
+    const clone3 = _.cloneDeep(parseOclWrapper(stepExample))
+    const clone4 = _.cloneDeep(parseOclWrapper(stepExampleWithDifferentName))
+
+    expect(_.isEqual(clone3[0], clone4[0])).toBeFalsy()
+    expect(_.isEqual(_.omit(clone3[0], ['name']), _.omit(clone4[0], ['name']))).toBeTruthy()
 
     // JSON parsing
     const json = JSON.stringify(wrapper, null, 2)
