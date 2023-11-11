@@ -194,6 +194,8 @@ step "upgrade-store-server-software" {
 
 int_attribute = 1
 
+array_attribute = [1]
+
 properties = {
     Extract = "False"
     Purpose = ""
@@ -289,6 +291,8 @@ properties = {
 
     // here we read the last item, which is a floating attribute
     expect(wrapper.int_attribute).toEqual(1)
+    expect(wrapper.array_attribute).toHaveLength(1)
+    expect(wrapper.array_attribute[0]).toEqual(1)
     expect(wrapper[4].int_attribute).toEqual(1)
     expect(parsedJson[4].int_attribute).toEqual(1)
 
