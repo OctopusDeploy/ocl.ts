@@ -6,6 +6,9 @@ test("Wrapper OCL property access", () => {
     const testocl = `
 step "back-up-store-client-filesystem" {
     name = "Upgrade POS client software"
+    array_value = [1, 2, 3, "test", {
+      test = 1
+    }]
     number_value = 10
     bool_value = false
     properties = {
@@ -324,6 +327,12 @@ properties = {
     expect(wrapper.step["back-up-store-client-filesystem"].action['upgrade-store-client-software'].__name).toEqual("action")
     expect(wrapper.step["back-up-store-client-filesystem"].name).toEqual("Upgrade POS client software")
     expect(wrapper.step["back-up-store-client-filesystem"].number_value).toEqual(10)
+    expect(wrapper.step["back-up-store-client-filesystem"].array_value).toHaveLength(5)
+    expect(wrapper.step["back-up-store-client-filesystem"].array_value[0]).toEqual(1)
+    expect(wrapper.step["back-up-store-client-filesystem"].array_value[1]).toEqual(2)
+    expect(wrapper.step["back-up-store-client-filesystem"].array_value[2]).toEqual(3)
+    expect(wrapper.step["back-up-store-client-filesystem"].array_value[3]).toEqual("test")
+    expect(wrapper.step["back-up-store-client-filesystem"].array_value[4].test).toEqual(1)
     expect(wrapper.step["back-up-store-client-filesystem"].bool_value).toBeFalsy()
     expect(wrapper.step["back-up-store-client-filesystem"].properties['Octopus.Action.MaxParallelism']).toEqual("100")
     expect(wrapper.step["back-up-store-client-filesystem"].action['back-up-store-client-filesystem'].action_type).toEqual("Octopus.Script")

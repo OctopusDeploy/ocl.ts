@@ -80,32 +80,55 @@ function getProperty(node: ASTNode | undefined, name: string): any {
  * Return a plain JavaScript value for attribute nodes. HereDocs are returned in their unprocessed form.
  * @param node The node to return the value of.
  */
-function getUnquotedPropertyValue(node: AttributeNode | undefined): string | number | boolean | DictionaryNode | undefined {
+function getUnquotedPropertyValue(node: AttributeNode | undefined): string | number | boolean |  DictionaryNode | (string | number | boolean |  DictionaryNode | undefined)[] | undefined {
     if (!node || node.type !== NodeType.ATTRIBUTE_NODE) {
         return undefined
     }
 
-    if (node.value.type == NodeType.LITERAL_NODE) {
-        const attValueNode = node.value as LiteralNode
-        const litValueNode = attValueNode.value as Token
-        const value = litValueNode.value
+    if (node.value.type === NodeType.ARRAY_NODE) {
+        return node.value.children
+            .map(c => {
+                if (c.type === NodeType.LITERAL_NODE) {
+                    return getLiteralValue(c)
+                }
 
-        if (attValueNode.literalType != LiteralType.INDENTED_HEREDOC && attValueNode.literalType != LiteralType.HEREDOC) {
-            return JSON.parse(value)
-        }
+                if (c.type === NodeType.DICTIONARY_NODE) {
+                    return wrapDictionaryNode(c)
+                }
 
-        return value
+                return undefined
+            })
+            .filter(c => c !== undefined)
+    }
+
+    if (node.value.type === NodeType.LITERAL_NODE) {
+        return getLiteralValue(node.value as LiteralNode)
     }
 
     if (node.value.type === NodeType.DICTIONARY_NODE) {
-        return buildProxy(node.value,
-            function (target, name) {
-                return getProperty(target, name.toString())
-            }
-        )
+        return wrapDictionaryNode(node.value)
     }
 
     return undefined
+}
+
+function wrapDictionaryNode(node: DictionaryNode) {
+    return buildProxy(node,
+        function (target, name) {
+            return getProperty(target, name.toString())
+        }
+    )
+}
+
+function getLiteralValue(node: LiteralNode): string | number | boolean {
+    const litValueNode = node.value as Token
+    const value = litValueNode.value
+
+    if (node.literalType != LiteralType.INDENTED_HEREDOC && node.literalType != LiteralType.HEREDOC) {
+        return JSON.parse(value)
+    }
+
+    return value
 }
 
 /**
