@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/OctopusDeploy/ocl.ts/compare/v0.2.1...v0.2.2) (2026-08-27)
+
+
+### Bug Fixes
+
+* align invalid-input tests with where validation actually happens ([736d8c6](https://github.com/OctopusDeploy/ocl.ts/commit/736d8c61c8d9afb6d7f7f7423c019b8557869088))
+
 ## [0.2.1](https://github.com/OctopusDeploy/ocl.ts/compare/v0.2.0...v0.2.1) (2023-11-19)
 
 
