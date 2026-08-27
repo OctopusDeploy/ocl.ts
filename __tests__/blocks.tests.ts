@@ -1,6 +1,7 @@
 import { Lexer } from "../src/lexer";
 import { Parser } from "../src/parser";
 import { TokenType } from "../src/token";
+import { collectProblems } from "./support/problems";
 
 test("block_with_children_and_labels", () => {
     const lexer = new Lexer(`block_with_children_and_labels "Label 1" "Label 2" {
@@ -192,9 +193,10 @@ test("block with delimited attribute value", () => {
 });
 
 test("invalid empty block with newline before open bracket", () => {
-    const lexer = new Lexer(`my_block
+    const source = `my_block
     {
-    }`);
+    }`;
+    const lexer = new Lexer(source);
     expect(lexer).toBeDefined();
 
     let token = lexer.nextToken();
@@ -203,7 +205,10 @@ test("invalid empty block with newline before open bracket", () => {
     expect(token.value).toEqual(`my_block`);
 
     token = lexer.nextToken();
-    expect(token.tokenError).toBeDefined();
+    // The lexer is context-free -- it cannot see the preceding token, so a
+    // newline in an invalid position is not a token-level error. The parser is
+    // what rejects this input; asserted at the end of the test.
+    expect(token.tokenError).toBeUndefined();
     expect(token.tokenType).toEqual(TokenType.NEW_LINE);
     expect(token.value).toEqual(`\n`);
 
@@ -226,11 +231,19 @@ test("invalid empty block with newline before open bracket", () => {
     expect(token.tokenError).toBeUndefined();
     expect(token.tokenType).toEqual(TokenType.EOF);
     expect(token.value).toEqual(`EOF`);
+    // Invalid input is rejected during parsing. Note the fresh Lexer: the one
+    // above has been drained by the assertions, and a drained lexer yields an
+    // empty AST.
+    const problems = collectProblems(new Parser(new Lexer(source)).getAST());
+    expect(problems).toContain(
+        'Unexpected token. Expected attribute or block definition.'
+    );
 });
 
 test("invalid empty block with unquoted label", () => {
-    const lexer = new Lexer(`my block {
-}`);
+    const source = `my block {
+}`;
+    const lexer = new Lexer(source);
     expect(lexer).toBeDefined();
 
     let token = lexer.nextToken();
@@ -243,7 +256,10 @@ test("invalid empty block with unquoted label", () => {
     token = lexer.nextToken();
     expect(token.col).toEqual(4);
     expect(token.ln).toEqual(1);
-    expect(token.tokenError).toBeDefined();
+    // The lexer is context-free -- a bare symbol is a valid token in isolation,
+    // so an unquoted block label is not a token-level error. The parser is what
+    // rejects this input; asserted at the end of the test.
+    expect(token.tokenError).toBeUndefined();
     expect(token.tokenType).toEqual(TokenType.SYMBOL);
     expect(token.value).toEqual(`block`);
 
@@ -274,5 +290,12 @@ test("invalid empty block with unquoted label", () => {
     expect(token.tokenError).toBeUndefined();
     expect(token.tokenType).toEqual(TokenType.EOF);
     expect(token.value).toEqual(`EOF`);
+    // Invalid input is rejected during parsing. Note the fresh Lexer: the one
+    // above has been drained by the assertions, and a drained lexer yields an
+    // empty AST.
+    const problems = collectProblems(new Parser(new Lexer(source)).getAST());
+    expect(problems).toContain(
+        'Unexpected token. Expected attribute or block definition.'
+    );
 });
 

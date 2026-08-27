@@ -1,9 +1,12 @@
 import { Lexer } from "../src/lexer";
+import { Parser } from "../src/parser";
 import { TokenType } from "../src/token";
+import { collectProblems } from "./support/problems";
 
 test("invalid integer attribute with newline before assignment operator", () => {
-    const lexer = new Lexer(`int_attribute
-    = 1`);
+    const source = `int_attribute
+    = 1`;
+    const lexer = new Lexer(source);
     expect(lexer).toBeDefined();
 
     let token = lexer.nextToken();
@@ -16,7 +19,10 @@ test("invalid integer attribute with newline before assignment operator", () => 
     token = lexer.nextToken();
     expect(token.col).toEqual(14);
     expect(token.ln).toEqual(1);
-    expect(token.tokenError).toBeDefined();
+    // The lexer is context-free -- it cannot see the preceding token, so a
+    // newline in an invalid position is not a token-level error. The parser is
+    // what rejects this input; asserted at the end of the test.
+    expect(token.tokenError).toBeUndefined();
     expect(token.tokenType).toEqual(TokenType.NEW_LINE);
     expect(token.value).toEqual(`\n`);
 
@@ -40,11 +46,19 @@ test("invalid integer attribute with newline before assignment operator", () => 
     expect(token.tokenError).toBeUndefined();
     expect(token.tokenType).toEqual(TokenType.EOF);
     expect(token.value).toEqual(`EOF`);
+    // Invalid input is rejected during parsing. Note the fresh Lexer: the one
+    // above has been drained by the assertions, and a drained lexer yields an
+    // empty AST.
+    const problems = collectProblems(new Parser(new Lexer(source)).getAST());
+    expect(problems).toContain(
+        'Unexpected token. Expected attribute or block definition.'
+    );
 });
 
 test("invalid integer attribute with newline before value", () => {
-    const lexer = new Lexer(`int_attribute =
- 1`);
+    const source = `int_attribute =
+ 1`;
+    const lexer = new Lexer(source);
     expect(lexer).toBeDefined();
 
     let token = lexer.nextToken();
@@ -64,7 +78,10 @@ test("invalid integer attribute with newline before value", () => {
     token = lexer.nextToken();
     expect(token.col).toEqual(16);
     expect(token.ln).toEqual(1);
-    expect(token.tokenError).toBeDefined();
+    // The lexer is context-free -- it cannot see the preceding token, so a
+    // newline in an invalid position is not a token-level error. The parser is
+    // what rejects this input; asserted at the end of the test.
+    expect(token.tokenError).toBeUndefined();
     expect(token.tokenType).toEqual(TokenType.NEW_LINE);
     expect(token.value).toEqual(`\n`);
 
@@ -81,6 +98,13 @@ test("invalid integer attribute with newline before value", () => {
     expect(token.tokenError).toBeUndefined();
     expect(token.tokenType).toEqual(TokenType.EOF);
     expect(token.value).toEqual(`EOF`);
+    // Invalid input is rejected during parsing. Note the fresh Lexer: the one
+    // above has been drained by the assertions, and a drained lexer yields an
+    // empty AST.
+    const problems = collectProblems(new Parser(new Lexer(source)).getAST());
+    expect(problems).toContain(
+        'Unexpected token. Expected literal, dictionary or array after assignment operator.'
+    );
 });
 
 test("integer attribute", () => {

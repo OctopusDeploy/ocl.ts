@@ -81,7 +81,8 @@
             "col": 41,
             "tokenType": "CLOSE_ARRAY"
           },
-          "values": []
+          "values": [],
+          "problems": []
         }
       },
       {
@@ -138,7 +139,8 @@
             "tokenType": "CLOSE_BRACKET"
           },
           "entries": [],
-          "type": "DictionaryNode"
+          "type": "DictionaryNode",
+          "problems": []
         }
       },
       {
@@ -169,7 +171,8 @@
             "col": 41,
             "tokenType": "CLOSE_ARRAY"
           },
-          "values": []
+          "values": [],
+          "problems": []
         }
       },
       {
@@ -200,7 +203,8 @@
             "col": 41,
             "tokenType": "CLOSE_ARRAY"
           },
-          "values": []
+          "values": [],
+          "problems": []
         }
       },
       {
@@ -231,7 +235,8 @@
             "tokenType": "CLOSE_BRACKET"
           },
           "entries": [],
-          "type": "DictionaryNode"
+          "type": "DictionaryNode",
+          "problems": []
         }
       },
       {
@@ -314,7 +319,8 @@
             "tokenType": "CLOSE_BRACKET"
           },
           "entries": [],
-          "type": "DictionaryNode"
+          "type": "DictionaryNode",
+          "problems": []
         }
       },
       {
@@ -371,7 +377,8 @@
             "col": 41,
             "tokenType": "CLOSE_ARRAY"
           },
-          "values": []
+          "values": [],
+          "problems": []
         }
       },
       {
@@ -446,6 +453,7 @@
       "col": 1,
       "tokenType": "SYMBOL"
     },
+    "problems": [],
     "labels": [
       {
         "literalType": "string",
