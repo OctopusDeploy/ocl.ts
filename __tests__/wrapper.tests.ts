@@ -271,8 +271,6 @@ properties = {
     const json = JSON.stringify(wrapper, null, 2)
     const parsedJson = JSON.parse(json)
 
-    console.log(json)
-
     // wrapper is read only
     wrapper.test = 'test'
     expect(wrapper.test).toBeUndefined()
